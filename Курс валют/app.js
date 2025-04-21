@@ -1,111 +1,88 @@
 const resultDiv = document.querySelector(".result-div");
-
 const input = document.querySelector(".input");
 
-const toUsdBtn = document.getElementById("to-usd-btn")
-const toEurBtn = document.getElementById("to-eur-btn")
-const toRubBtn = document.getElementById("to-rub-btn")
+const toUsdBtn = document.getElementById("to-usd-btn");
+const toEurBtn = document.getElementById("to-eur-btn");
+const toRubBtn = document.getElementById("to-rub-btn");
 
-const usdBtn = document.getElementById("usd-btn")
-const eurBtn = document.getElementById("eur-btn")
-const rubBtn = document.getElementById("rub-btn")
+const usdBtn = document.getElementById("usd-btn");
+const eurBtn = document.getElementById("eur-btn");
+const rubBtn = document.getElementById("rub-btn");
 
+const clearBtn = document.querySelector(".clear-btn");
 
+let resultcCurrency = "";
+let num = 0;
 
-let resultcCurrency = 0
-let num = 0
+let rates = {}; // Тут будут актуальные курсы
 
-function addUSD() {
-    num= input.value
-    let a = input.value += " USD"
-
-    console.log(a);
-    resultcCurrency = a 
-    console.log(resultcCurrency);
+// Получение курса ЦБ РФ
+async function fetchRates() {
+    const res = await fetch("https://www.cbr-xml-daily.ru/daily_json.js");
+    const data = await res.json();
+    rates = {
+        USD: data.Valute.USD.Value,
+        EUR: data.Valute.EUR.Value
+    };
+    console.log("Курсы ЦБ РФ загружены:", rates);
 }
-toUsdBtn.addEventListener("click", addUSD) 
+fetchRates(); // Загружаем при старте
 
+function addCurrency(code) {
+    num = parseFloat(input.value);
+    if (!num) return alert("Введите число!");
 
-
-function addEUR() {
-    num= input.value
-    let a = input.value += " EUR"
-
-    console.log(a);
-    resultcCurrency = a 
-    console.log(resultcCurrency);
+    resultcCurrency = code;
+    input.value = `${num} ${code}`;
 }
-toEurBtn.addEventListener("click", addEUR) 
 
+toUsdBtn.addEventListener("click", () => addCurrency("USD"));
+toEurBtn.addEventListener("click", () => addCurrency("EUR"));
+toRubBtn.addEventListener("click", () => addCurrency("RUB"));
 
-
-function addRUB() {
-    num= input.value
-    let a = input.value += " RUB"
-    console.log(a);
-    resultcCurrency = a 
-    console.log(resultcCurrency);
-    
-
-}
-toRubBtn.addEventListener("click", addRUB) 
-
-// if resultcCurrency имееет курс руб и тд 
-// то вывод курс 
-
-function usd(){
-    console.log("usd");
-    
-    if(resultcCurrency.includes("EUR")) {
-        // console.log("net");
-        let e = num * 0.92
-        console.log(e);
-        resultDiv.textContent = e
-    }else if (resultcCurrency.includes("RUB")) {
-        let e = num * 0.0118
-        console.log(e);
-        resultDiv.textContent = e
-    }else{
-        resultDiv.textContent = "Выберите другую валюту!"
+function convert(toCurrency) {
+    if (!num || !resultcCurrency) {
+        resultDiv.textContent = "Сначала введите сумму и выберите валюту";
+        return;
     }
-}
-usdBtn.addEventListener("click", usd)
 
+    let result = 0;
 
-
-function eur(){
-    console.log("eur");
-    if (resultcCurrency.includes("USD")) {
-        let e = num * 1.08
-        console.log(e);
-        resultDiv.textContent = e
-    }else if (resultcCurrency.includes("RUB")){
-        let e = num * 0.92
-        console.log(e);
-        resultDiv.textContent = e
-    }else{
-        resultDiv.textContent = "Выберите другую валюту!"
+    if (resultcCurrency === toCurrency) {
+        resultDiv.textContent = `Это уже ${toCurrency}`;
+        return;
     }
-}
-eurBtn.addEventListener("click", eur)
 
-
-
-function rub(){
-    // console.log("rub");
-    if (resultcCurrency.includes("USD")) {
-        let e = num * 84.21
-        console.log(e);
-        resultDiv.textContent = e
-    }else if (resultcCurrency.includes("EUR")){
-    let e = num * 1.08
-    console.log(e);
-    resultDiv.textContent = e
-    }else{
-        resultDiv.textContent = "Выберите другую валюту!"
+    // Преобразуем всё через RUB (базовая валюта у ЦБ РФ)
+    let rubValue = 0;
+    if (resultcCurrency === "USD") {
+        rubValue = num * rates.USD;
+    } else if (resultcCurrency === "EUR") {
+        rubValue = num * rates.EUR;
+    } else if (resultcCurrency === "RUB") {
+        rubValue = num;
     }
+
+    // Переводим из RUB в целевую валюту
+    if (toCurrency === "USD") {
+        result = rubValue / rates.USD;
+    } else if (toCurrency === "EUR") {
+        result = rubValue / rates.EUR;
+    } else if (toCurrency === "RUB") {
+        result = rubValue;
+    }
+
+    resultDiv.textContent = `${result.toFixed(2)} ${toCurrency}`;
+    console.log(`Результат: ${result} ${toCurrency}`);
 }
-rubBtn.addEventListener("click", rub)
 
+usdBtn.addEventListener("click", () => convert("USD"));
+eurBtn.addEventListener("click", () => convert("EUR"));
+rubBtn.addEventListener("click", () => convert("RUB"));
 
-
+clearBtn.addEventListener("click", () => {
+    input.value = "";
+    resultDiv.textContent = "Итоговый расчет";
+    num = 0;
+    resultcCurrency = "";
+});
