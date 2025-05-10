@@ -86,3 +86,4 @@ clearBtn.addEventListener("click", () => {
     num = 0;
     resultcCurrency = "";
 });
+ 
